@@ -32,6 +32,7 @@ public class Client {
     /**
      * @param args the command line arguments
      */
+    private final double PI = 3.242; 
     public static void main(String[] args) throws   Exception { // avoid throwing (Use try catch)
         // create keypair generator implementing RSA algorithm
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
