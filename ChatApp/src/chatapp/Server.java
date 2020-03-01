@@ -17,6 +17,10 @@ import java.net.Socket;
 import java.io.InputStreamReader;
 // import Buffer reader
 import java.io.BufferedReader;
+// import input stream library for objects
+import java.io.ObjectInputStream;
+// import
+import java.security.Key;
 
 /**
  *
@@ -32,7 +36,8 @@ public class Server {
         // 
         System.out.println("System is waiting for client request");
         // Establishing socket connection
-        // Accept request from client
+        // Server listening for connection
+        // (Accept request from client)
         Socket s = ss.accept();
         // Connection Notification
         System.out.println("Client Connected!");
@@ -46,7 +51,15 @@ public class Server {
         
         System.out.println("Message read");
         // Output message
-        System.out.println("Client Data : " + str);
+        System.out.println("Client Data : " + str.replaceAll("[|||]", "\n"));
+        // host A public key
+        ObjectInputStream is = new ObjectInputStream(s.getInputStream());
+        // read value and cast 
+        Key pubA = (Key)is.readObject();//catch IOException & ClassNotFoundException
+        // show public key
+        System.out.println("Client Public Key : " + pubA);
+        // close socket
+        s.close(); // take out once placed in try with resources
     }
 }
 

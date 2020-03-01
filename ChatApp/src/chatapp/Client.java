@@ -11,12 +11,13 @@ package chatapp;
  */
 // Import Socket Class
 import java.net.Socket;
-// import OutputStream Class
-//import java.io.OutputStream; // not utilized
 // import OutputStreamWriter Class
 import java.io.OutputStreamWriter;
 // import print writer
 import java.io.PrintWriter;
+// import object output stream class
+import java.io.ObjectOutputStream;
+//
 import static java.lang.System.out;
 // import java security package
 import java.security.KeyPairGenerator;
@@ -36,10 +37,7 @@ import java.security.spec.*;
 import javax.crypto.spec.*;
 //Provides the classes and interfaces for cryptographic operations.
 import javax.crypto.SecretKeyFactory;
-/**
- *
- * @author PUSER
- */
+
 public class Client implements KeySpec { //
     
     /**
@@ -56,11 +54,11 @@ public class Client implements KeySpec { //
         Key pub = kp.getPublic();
         // get private key
         Key pvt = kp.getPrivate();
-        // test string
-        String str = pub.toString();
+        // test string (notice the impact on carrige return in console)
+        String str = "\nBienvenue\rOla\r\nWillkommen\n";
         // TEST: see what pub & pvt hold
-        System.out.println("Public Key: " +pub +"\nPublic Key in String fmt: " +str +"\nPrivate Key: " +pvt);
-        
+        System.out.println("Public Key: " +pub +"\nPrivate Key: " +pvt);
+        System.out.println("Test String: " +str);
         //***********************************generate PassA***********************************************
         //variable to identifier range for random generator
         int rangeValue = 100000;
@@ -124,17 +122,31 @@ public class Client implements KeySpec { //
         System.out.println("Socket Request Sent");
         // Following order of precedence
         // create an output stream for the socket
-        // make the stream writable
+        // adobt effective conversion of text to & from binary
         OutputStreamWriter usher = new OutputStreamWriter(s.getOutputStream());// place in try with resources block
         // flush the buffer on println() invocation 
-        // (this might be why only first line of public key is printed)
-        // Possible solution: alter what initiates flush, or
-        // take out carridge return and newline from sent public key string
+        // replace carridge return and|or newline from sent public key string
+        // (if not, only first line of public key is sent)
         PrintWriter out = new PrintWriter(usher);
-        out.println(str);
+        //out.println(pub);
+        out.println(str.replaceAll("\\r\\n|\\r|\\n", "|||"));
         out.flush();
         System.out.println("Message Sent");
         
+        // Following order of precedence
+        // create an output stream for the socket 
+        // create a writable object output stream that writes to specified stream
+        // (enables you to write Java objects to an OutputStream instead of just raw bytes)
+        // Class' object is converted to byte before being sent
+        // Note: Class has to implement serializable interface
+        // Serializable is a marker interface hence has no method
+        // It enables objects states of classes that implement it to be stored in bytes
+        ObjectOutputStream os = new ObjectOutputStream(s.getOutputStream());// place in try with resources block
+        os.writeObject(pub); // why not use something similar for text? why use PrintWriter?
+        // Notice that stream takes strings and objects but handles them seperately
+        
+        // close socket
+        s.close();// take out once placed in try with resources
         
     }
     
