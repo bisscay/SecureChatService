@@ -11,6 +11,8 @@ package chatapp;
  */
 // Import Socket Class
 import java.net.Socket;
+// import output stream class for byte manpi
+import java.io.OutputStream;
 // import OutputStreamWriter Class
 import java.io.OutputStreamWriter;
 // import print writer
@@ -18,7 +20,7 @@ import java.io.PrintWriter;
 // import object output stream class
 import java.io.ObjectOutputStream;
 //
-import static java.lang.System.out;
+import static java.lang.System.out; // not utilized so far
 // import java security package
 import java.security.KeyPairGenerator;
 // import class to hold keys
@@ -55,12 +57,12 @@ public class Client implements KeySpec { //
         // get private key
         Key pvt = kp.getPrivate();
         // test string (notice the impact on carrige return in console)
-        String str = "\nBienvenue\rOla\r\nWillkommen\n";
-        // TEST: see what pub & pvt hold
+        String str = "\nBienvenue\rOla\r\nWillkommen\n";//keyboard strokes will be taken from user
+        // TEST: see what str, pub & pvt hold
         System.out.println("Public Key: " +pub +"\nPrivate Key: " +pvt);
         System.out.println("Test String: " +str);
         //***********************************generate PassA***********************************************
-        //variable to identifier range for random generator
+        //variable to specify range of random generator
         int rangeValue = 100000;
         //create an instance of class SecureRandom
         SecureRandom randNumber = new SecureRandom(); 
@@ -71,15 +73,29 @@ public class Client implements KeySpec { //
         //*************************************************************************************************
         
         //**********************************Hashing(PassA)*************************************************
-        //generate salt for extendend hashing cryption
-        //this will retrive a random byte array.
+        // PBKDF2 Algorithm used becasue we can slow down the algorithm by changing the inputs
+        // one of the most effective hashing algorithm implemented in java at the moment
+        // generate salt for extendend hashing cryption
+        // this will retrive a random byte array.
         SecureRandom random = new SecureRandom(); //create an instance of class SecureRandom
         byte[] salt = new byte[16]; //creates a size 16 array of type byte
         random.nextBytes(salt); //generate random byte and store in array(salt).
-        
-        KeySpec spec = new PBEKeySpec(PassA.toCharArray(), salt, 65536, 128); //
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");//converts key into key specification (high level cryptographic operation)
-        byte[] hash = factory.generateSecret(spec).getEncoded();
+        // Define algorithm specifications 
+        // PassA.toCharArray() - the password(Pass A) as character array and not string for mutability
+        // 65536 - Strength parameter; how many iterations algorithm runs for; increasing time to produce hash
+        // 128 - the to-be-derived key length
+        // catch NullPointerException - if salt is null
+        // catch IllegalArgumentException - if salt is empty, iterationCount or keyLength is -ve
+        KeySpec spec = new PBEKeySpec(PassA.toCharArray(), salt, 65536, 128);//catch NullPointerException & IllegalArgumentException
+        //converts key into key specification (high level cryptographic operation)
+        // return object that converts secret keys of the specified algoritm
+        // catch NullPointerException - if the specified algorithm is null
+        // catch NoSuchAlgorithmException - if no Provider supports a SecretKeyFactorySpi implementation for the specified algorithm
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");// catch NullPointerException & NoSuchAlgorithmException
+        // generateSecret() - generates secret key from the provided specification
+        // getEncoded() - Key interface method; returns key in its primary encoding format, else null
+        // catch InvalidKeySpecException if the given key spec is inappropriate for secret-key factory to produce key
+        byte[] hash = factory.generateSecret(spec).getEncoded();//catch InvalidKeySpecException
         //H(PassA) completed
         //*************************************************************************************************
                
@@ -122,7 +138,7 @@ public class Client implements KeySpec { //
         System.out.println("Socket Request Sent");
         // Following order of precedence
         // create an output stream for the socket
-        // adobt effective conversion of text to & from binary
+        // adobt effective conversion of text to & from byte
         OutputStreamWriter usher = new OutputStreamWriter(s.getOutputStream());// place in try with resources block
         // flush the buffer on println() invocation 
         // replace carridge return and|or newline from sent public key string
@@ -131,7 +147,18 @@ public class Client implements KeySpec { //
         //out.println(pub);
         out.println(str.replaceAll("\\r\\n|\\r|\\n", "|||"));
         out.flush();
-        System.out.println("Message Sent");
+        
+        // See what's in hash
+        System.out.print("Hashed Pass A: [ ");
+        for (int i : hash){
+            System.out.print(i);
+            System.out.print(" ");
+        }
+        System.out.println("]");
+        // send hash to server and verify value
+        // hash in byte form so utilize ObjectOutputStream; byte is a primitive class type
+        //ObjectOutputStream byteOS = new ObjectOutputStream(s.getOutputStream());
+        //byteOS.writeObject(hash); // also need to check trigger for flush
         
         // Following order of precedence
         // create an output stream for the socket 
@@ -142,12 +169,14 @@ public class Client implements KeySpec { //
         // Serializable is a marker interface hence has no method
         // It enables objects states of classes that implement it to be stored in bytes
         ObjectOutputStream os = new ObjectOutputStream(s.getOutputStream());// place in try with resources block
-        os.writeObject(pub); // why not use something similar for text? why use PrintWriter?
+        os.writeObject(pub);// what triggers flush? Possibility that object is written when socket is closed  (find a work around)
         // Notice that stream takes strings and objects but handles them seperately
+        os.writeObject(hash);
+        
+        System.out.println("Message Sent");
         
         // close socket
         s.close();// take out once placed in try with resources
-        
     }
     
 }

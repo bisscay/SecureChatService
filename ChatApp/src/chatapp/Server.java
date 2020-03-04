@@ -45,19 +45,27 @@ public class Server {
         BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
         System.out.println("Message recieved");
         
-        
         String str  = br.readLine();
-        
-        
-        System.out.println("Message read");
         // Output message
         System.out.println("Client Data : " + str.replaceAll("[|||]", "\n"));
         // host A public key
-        ObjectInputStream is = new ObjectInputStream(s.getInputStream());
+        ObjectInputStream is = new ObjectInputStream(s.getInputStream());//place in try with resources
         // read value and cast 
         Key pubA = (Key)is.readObject();//catch IOException & ClassNotFoundException
         // show public key
         System.out.println("Client Public Key : " + pubA);
+        
+        // verify host A hashed challenge
+        byte[] hashA = (byte[])is.readObject();
+        // See what's in hash
+        System.out.print("Hashed Pass A: [ ");
+        for (int i : hashA){
+            System.out.print(i);
+            System.out.print(" ");
+        }
+        System.out.println("]");
+        
+        System.out.println("Message read");
         // close socket
         s.close(); // take out once placed in try with resources
     }
