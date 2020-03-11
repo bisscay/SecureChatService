@@ -7,7 +7,7 @@ package chatapp;
 
 /**
  *
- * @author bAe_Des_Arni_Shra
+ * @author bAe_Des_Arni_Shro
  */
 // import server socket class
 import java.net.ServerSocket;
