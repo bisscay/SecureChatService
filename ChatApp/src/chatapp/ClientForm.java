@@ -1,9 +1,18 @@
 package chatapp;
 // import stream classes
+import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 // import socket classes for RPC's
 import java.net.Socket;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.text.Document;
 
 /**
  *
@@ -19,10 +28,16 @@ public class ClientForm extends javax.swing.JFrame {
     // make private & assign default values
     static Socket s;
     static DataInputStream dis;
-    static DataOutputStream dos;
+    //static DataOutputStream dos;
+    // Create a file chooser
+    // param: String/File - a file path
+    File testPath = new File("/Users/prof.bissallahekele/Desktop/Java/SecureChatService/ChatApp/Images/ClientImg");
+    final JFileChooser fc = new JFileChooser(testPath);
     // Default Cstr
     public ClientForm() {
         initComponents();
+        // make text pane read only
+        msgArea.setEditable(false);
     }
 
     /**
@@ -34,17 +49,15 @@ public class ClientForm extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        msgArea = new javax.swing.JTextArea();
         msgText = new javax.swing.JTextField();
         buttonSend = new javax.swing.JButton();
+        buttonAttach = new javax.swing.JButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        msgArea = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Client");
-
-        msgArea.setColumns(20);
-        msgArea.setRows(5);
-        jScrollPane1.setViewportView(msgArea);
+        setIconImages(null);
 
         msgText.setForeground(new java.awt.Color(153, 153, 153));
         msgText.setText("Type a message");
@@ -56,6 +69,15 @@ public class ClientForm extends javax.swing.JFrame {
             }
         });
 
+        buttonAttach.setText("Attach");
+        buttonAttach.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonAttachActionPerformed(evt);
+            }
+        });
+
+        jScrollPane2.setViewportView(msgArea);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -63,9 +85,11 @@ public class ClientForm extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(msgText)
+                        .addComponent(buttonAttach)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(msgText, javax.swing.GroupLayout.DEFAULT_SIZE, 246, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(buttonSend)))
                 .addContainerGap())
@@ -74,11 +98,12 @@ public class ClientForm extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(buttonSend)
-                    .addComponent(msgText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(msgText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(buttonAttach))
                 .addGap(9, 9, 9))
         );
 
@@ -90,6 +115,9 @@ public class ClientForm extends javax.swing.JFrame {
         // create container to hold messages
         String msgOut = "";
         try {
+            // create data output stream
+            DataOutputStream dos = dos = new DataOutputStream(s.getOutputStream());;
+            /* Working With Just Text
             // get messages from the text box when button is clicked
             // trim white spaces from string gained
             // store message in container
@@ -98,12 +126,62 @@ public class ClientForm extends javax.swing.JFrame {
             // concat message stored in container
             // append this sum to message area's display
             msgArea.setText(msgArea.getText().trim() +"\nClient: " +msgOut);
-            // write this sum to the output stream
+            // write text from field to output stream
+            dos.writeUTF("Client: " +msgOut); // catch IOException
+            */
+            // create a doc container for text
+            Document doc = msgArea.getDocument();
+            // get messages from the text field
+            msgOut = msgText.getText().trim();
+            // place message in doc container
+            // param 1: offset - length of current doc
+            // param 2: point to insert new text
+            // param 3: attribute
+            doc.insertString(doc.getLength(), "\nClient: " +msgOut, null);
+            // write text from field to output stream
             dos.writeUTF("Client: " +msgOut); // catch IOException
         } catch (Exception e){
             // handle exception
+            e.printStackTrace();
         }
     }//GEN-LAST:event_buttonSendActionPerformed
+    
+    // Bring up file choser in response to button click
+    private void buttonAttachActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonAttachActionPerformed
+        // Display a dialog over the frame
+        // parm: parent component for dialog (can be null)
+        // return: int - if a user selects a file
+        // if (evt.getSource() == buttonAttach) --> try out but not needed
+        int returnVal = fc.showOpenDialog(ClientForm.this);
+        // chechk if return value is an approval option
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            // get chosen file
+            File file = fc.getSelectedFile();
+            // console file has been attached confirmation
+            // push file on stream
+            // initialize buffer to hold image data 
+            BufferedImage img = null;
+            try {
+                // read img from file location & store in buffer
+                // ImageIO is a utility class for image processing
+                // read method returns an image buffer
+                img = ImageIO.read(file);
+                // scale image to be printed as icon
+                Image imgScaled = img.getScaledInstance(100, 120, java.awt.Image.SCALE_SMOOTH);
+                // make scaled image an icon
+                ImageIcon imgIcon = new ImageIcon(imgScaled);
+                // display image icon on text pane
+                msgArea.insertIcon(imgIcon);
+                // write original image to outputstream
+                ImageIO.write(img, "gif", s.getOutputStream());//s.getOutputStream()
+                //dos.writeUTF(file.getName());
+                // sent image confirmation
+                System.out.println("Image : " +file.getName() +" Sent");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_buttonAttachActionPerformed
 
     /**
      * @param args the command line arguments
@@ -148,9 +226,10 @@ public class ClientForm extends javax.swing.JFrame {
             // create input stream
             dis = new DataInputStream(s.getInputStream()); // catch IOException
             // create output stream
-            dos = new DataOutputStream(s.getOutputStream());
+            //dos = new DataOutputStream(s.getOutputStream());
+            // Working With Just Text
             // check what message container holds till exit is seen
-            while(!msgIn.equals("exit")) {
+            //while(!msgIn.equals("exit")) {
                 // update message container to contain values in the input stream
                 msgIn = dis.readUTF(); // catch IOException
                 // Update text area to contain currently displayed values &
@@ -162,7 +241,23 @@ public class ClientForm extends javax.swing.JFrame {
                 // add the message in container to trimmed message
                 // place the combined values on the message area's display
                 msgArea.setText(msgArea.getText().trim() +"\n" +msgIn);
-            }
+            //}
+            /* Not Used but nice concept
+            // (DRY: Implementation can be in a fnc)
+            // create a doc container for text
+            System.out.println("Got here 1");
+            Document doc = msgArea.getDocument();
+            System.out.println("Got here 2");
+            // update message container to contain values in the input stream
+            msgIn = dis.readUTF(); // catch IOException
+            System.out.println("Got here 3");
+            // update doc container with text from input stream
+            // param 1: offset - length of current doc
+            // param 2: point to insert new text
+            // param 3: attribute
+            doc.insertString(doc.getLength(), "\n" +msgIn +" from Doc", null);
+            System.out.println("Got here 4");
+            */
         } catch (Exception e) {
             // Print stream used to handle error text
             // prints to the standard error
@@ -178,9 +273,10 @@ public class ClientForm extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton buttonAttach;
     private javax.swing.JButton buttonSend;
-    private javax.swing.JScrollPane jScrollPane1;
-    private static javax.swing.JTextArea msgArea;
+    private javax.swing.JScrollPane jScrollPane2;
+    private static javax.swing.JTextPane msgArea;
     private javax.swing.JTextField msgText;
     // End of variables declaration//GEN-END:variables
 }

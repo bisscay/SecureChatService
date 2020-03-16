@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package chatapp;
 
 /**
@@ -21,7 +16,14 @@ import java.io.BufferedReader;
 import java.io.ObjectInputStream;
 // import
 import java.security.Key;
-
+// import utility class for img processing
+import javax.imageio.ImageIO;
+// import buffer for image data
+import java.awt.image.BufferedImage;
+// import class for file manip
+import java.io.File;
+// import class to handle IOExceptions
+//import java.io.IOException;
 /**
  *
  * @author PUSER
@@ -66,6 +68,18 @@ public class Server {
         System.out.println("]");
         
         System.out.println("Message read");
+        //**********************Read Image*****************
+        // Following order of precedence
+        // generate input stream
+        // make an image input stream
+        // read from stream
+        // store in a buffer
+        BufferedImage img = ImageIO.read(ImageIO.createImageInputStream(s.getInputStream()));
+        System.out.println("Image received");
+        // place in file
+        ImageIO.write(img, "jpg", new File("Images/ServerImg/GeronaCopy")); // specify file path
+        // view on form panel
+        
         // close socket
         s.close(); // take out once placed in try with resources
     }

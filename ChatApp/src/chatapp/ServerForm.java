@@ -1,9 +1,13 @@
 package chatapp;
 // imports
+import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import javax.imageio.ImageIO;
 
 /**
  *
@@ -12,7 +16,7 @@ import java.net.Socket;
 public class ServerForm extends javax.swing.JFrame {
     // private attributes
     static DataInputStream dis;
-    static DataOutputStream dos;
+    //static DataOutputStream dos;
     static ServerSocket ss;
     static Socket s;
 
@@ -21,6 +25,8 @@ public class ServerForm extends javax.swing.JFrame {
      */
     public ServerForm() {
         initComponents();
+        // make text pane read only
+        msgArea.setEditable(false);
     }
 
     /**
@@ -32,17 +38,14 @@ public class ServerForm extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        msgArea = new javax.swing.JTextArea();
         msgText = new javax.swing.JTextField();
         buttonSend = new javax.swing.JButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        msgArea = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Server");
-
-        msgArea.setColumns(20);
-        msgArea.setRows(5);
-        jScrollPane1.setViewportView(msgArea);
+        setIconImages(null);
 
         msgText.setForeground(new java.awt.Color(153, 153, 153));
         msgText.setText("Type a message");
@@ -54,6 +57,8 @@ public class ServerForm extends javax.swing.JFrame {
             }
         });
 
+        jScrollPane2.setViewportView(msgArea);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -61,9 +66,9 @@ public class ServerForm extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(msgText)
+                        .addComponent(msgText, javax.swing.GroupLayout.DEFAULT_SIZE, 307, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(buttonSend)))
                 .addContainerGap())
@@ -72,8 +77,8 @@ public class ServerForm extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 245, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(msgText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(buttonSend))
@@ -88,6 +93,9 @@ public class ServerForm extends javax.swing.JFrame {
         // create message container
         String msgOut = "";
         try {
+            // create data output stream
+            DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+            
             // Following order of precedence
             // get message from text box
             // trim white spaces
@@ -148,9 +156,9 @@ public class ServerForm extends javax.swing.JFrame {
             // create input stream
             dis = new DataInputStream(s.getInputStream());
             // create output stream
-            dos = new DataOutputStream(s.getOutputStream());
+            //dos = new DataOutputStream(s.getOutputStream());
             // while container doesnt contain exit
-            while(!msgIn.equals("exit")){
+            //while(!msgIn.equals("exit")){
                 // update container with input stream content
                 msgIn = dis.readUTF();
                 // Update text area to contain currently displayed values &
@@ -162,9 +170,23 @@ public class ServerForm extends javax.swing.JFrame {
                 // add the message in container to trimmed message
                 // place the combined values on the message area's display
                 msgArea.setText(msgArea.getText().trim() +"\n" +msgIn);
-            }
+            //}
+            //**********************Read Image*****************
+            // Following order of precedence
+            // generate input stream
+            // make an image input stream
+            // read from stream
+            // store in a buffer
+            System.out.println("Before received");
+            BufferedImage img = ImageIO.read(ImageIO.createImageInputStream(s.getInputStream()));
+            System.out.println("Image received");
+            // place in file
+            ImageIO.write(img, "gif", new File("Images/ServerImg/Copy")); // specify file path & file name
+            // update on form panel
+            
         } catch(Exception e) {
             System.err.println("Could not listen on port: 1201");
+            e.printStackTrace();
             // status to indicate unsuccessful termination of JVM
             System.exit(1);
         }
@@ -172,8 +194,8 @@ public class ServerForm extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonSend;
-    private javax.swing.JScrollPane jScrollPane1;
-    private static javax.swing.JTextArea msgArea;
+    private javax.swing.JScrollPane jScrollPane2;
+    private static javax.swing.JTextPane msgArea;
     private javax.swing.JTextField msgText;
     // End of variables declaration//GEN-END:variables
 }

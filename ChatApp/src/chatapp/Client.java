@@ -39,6 +39,14 @@ import java.security.spec.*;
 import javax.crypto.spec.*;
 //Provides the classes and interfaces for cryptographic operations.
 import javax.crypto.SecretKeyFactory;
+// import utility class for img processing
+import javax.imageio.ImageIO;
+// import buffer for image data
+import java.awt.image.BufferedImage;
+// import class for file manip
+import java.io.File;
+// import class to handle IOExceptions
+//import java.io.IOException;
 
 public class Client implements KeySpec { //
     
@@ -175,6 +183,20 @@ public class Client implements KeySpec { //
         
         System.out.println("Message Sent");
         
+        //*************************Testing Image Transfer*************************
+        // initialize buffer to hold image data 
+        BufferedImage img = null;
+        // access image stored in file
+        File imgFile = new File("Images/ClientImg/Gerona.jpg");// specify file path
+        // read img from file location & store in buffer
+        // ImageIO is a utility class for image processing
+        // read method returns an image buffer
+        img = ImageIO.read(imgFile);
+        // write image to outputstream
+        ImageIO.write(img, "jpg", s.getOutputStream());
+        
+        System.out.println("Image Sent");
+                
         // close socket
         s.close();// take out once placed in try with resources
     }
