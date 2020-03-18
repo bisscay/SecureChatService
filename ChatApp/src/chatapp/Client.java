@@ -43,8 +43,14 @@ import javax.crypto.SecretKeyFactory;
 import javax.imageio.ImageIO;
 // import buffer for image data
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
 // import class for file manip
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 // import class to handle IOExceptions
 //import java.io.IOException;
 
@@ -54,6 +60,11 @@ public class Client implements KeySpec { //
      * @param args the command line arguments
      */
     public static void main(String[] args) throws   Exception { // avoid throwing (Use try catch)
+        
+        //variables/constant declaration
+        String controlString = "";
+        String fileName = "";
+        
         // create keypair generator implementing RSA algorithm
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         // specify key size 1024 | 2048
@@ -65,10 +76,11 @@ public class Client implements KeySpec { //
         // get private key
         Key pvt = kp.getPrivate();
         // test string (notice the impact on carrige return in console)
-        String str = "\nBienvenue\rOla\r\nWillkommen\n";//keyboard strokes will be taken from user
+        String str; //= "\nBienvenue\rOla\r\nWillkommen\n";//keyboard strokes will be taken from user
         // TEST: see what str, pub & pvt hold
         System.out.println("Public Key: " +pub +"\nPrivate Key: " +pvt);
-        System.out.println("Test String: " +str);
+        //System.out.println("Test String: " +str);
+        
         //***********************************generate PassA***********************************************
         //variable to specify range of random generator
         int rangeValue = 100000;
@@ -106,7 +118,8 @@ public class Client implements KeySpec { //
         byte[] hash = factory.generateSecret(spec).getEncoded();//catch InvalidKeySpecException
         //H(PassA) completed
         //*************************************************************************************************
-               
+        
+        //*********************************************SETUP COMMUNICATION TO SERVER***********************************************************
         // State ip address (Same host but different port communication)
         // (InetAddress class represents IP address) 
         // because we are using a Socket ctsr that takes in 
@@ -142,18 +155,20 @@ public class Client implements KeySpec { //
         // or select 0 for a random free port to be used
         // or leave port as null, this checks if hostB is an anyLocal address 
         // i.e address 0.0.0.0 (sockets that bind to all network cards)
-        Socket s = new Socket(hostB,portB,hostA,portA); // Catch IOException // what happens if port B is 0?
+        Socket linkSocket = new Socket(hostB,portB,hostA,portA); // Catch IOException // what happens if port B is 0?
         System.out.println("Socket Request Sent");
+        //**************************************************************************************************************************************
+        
         // Following order of precedence
         // create an output stream for the socket
         // adobt effective conversion of text to & from byte
-        OutputStreamWriter usher = new OutputStreamWriter(s.getOutputStream());// place in try with resources block
+        OutputStreamWriter usher = new OutputStreamWriter(linkSocket.getOutputStream());// place in try with resources block
         // flush the buffer on println() invocation 
         // replace carridge return and|or newline from sent public key string
         // (if not, only first line of public key is sent)
         PrintWriter out = new PrintWriter(usher);
         //out.println(pub);
-        out.println(str.replaceAll("\\r\\n|\\r|\\n", "|||"));
+        //out.println(str.replaceAll("\\r\\n|\\r|\\n", "|||"));
         out.flush();
         
         // See what's in hash
@@ -176,29 +191,92 @@ public class Client implements KeySpec { //
         // Note: Class has to implement serializable interface
         // Serializable is a marker interface hence has no method
         // It enables objects states of classes that implement it to be stored in bytes
-        ObjectOutputStream os = new ObjectOutputStream(s.getOutputStream());// place in try with resources block
+        ObjectOutputStream os = new ObjectOutputStream(linkSocket.getOutputStream());// place in try with resources block
         os.writeObject(pub);// what triggers flush? Possibility that object is written when socket is closed  (find a work around)
         // Notice that stream takes strings and objects but handles them seperately
         os.writeObject(hash);
         
         System.out.println("Message Sent");
         
-        //*************************Testing Image Transfer*************************
+        //*************************Testing Image Transfer 1*************************
         // initialize buffer to hold image data 
-        BufferedImage img = null;
+        //BufferedImage img = null;
         // access image stored in file
-        File imgFile = new File("Images/ClientImg/Gerona.jpg");// specify file path
+        //File imgFile = new File("Images/ClientImg/Gerona.jpg");// specify file path
         // read img from file location & store in buffer
         // ImageIO is a utility class for image processing
         // read method returns an image buffer
-        img = ImageIO.read(imgFile);
+        //img = ImageIO.read(imgFile);
         // write image to outputstream
-        ImageIO.write(img, "jpg", s.getOutputStream());
+        //ImageIO.write(img, "jpg", linkSocket.getOutputStream());
+        //***********************************************************************************************************************
         
-        System.out.println("Image Sent");
+        //*************************Testing Image Transfer 2*************************
+        //************************************ENABLE READ/WRITE DATA TO/FROM SERVER**********************************************
+        
+       //Initialize Data Input Stream on client end: Enable client to read data from the 
+       //linked communication socket Input stream
+        DataInputStream dataInStream = new DataInputStream(linkSocket.getInputStream());
+        //Initialize Data Output Stream on client end: Enable client to write data to the 
+        //linked communication socket Input stream
+        DataOutputStream dataOutStream = new DataOutputStream(linkSocket.getOutputStream()); 
+        //Initialize Input stream reader on client end with input stream byte data: required to decodes input 
+        //stream byte data into characters and pass to the buffered reader.
+        InputStreamReader inputStreamReader = new InputStreamReader(System.in);
+        //read text from character based input stream, improve transfer performance
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);  
+        //****************************************************************************************************************************
+        
+        //********************************************READ IMAGE FROM SERVER************************************************************
+        System.out.println("Enter start to read image from server");
+        
+        try
+        {
+            //control statement, user needs to enter "start" to resume image transfer
+            while(!controlString.equals("start"))
+                controlString = bufferedReader.readLine();
+            
+            dataOutStream.writeUTF(controlString);//write controlString value to the linked communication socket
+            dataOutStream.flush(); //push content to server socket
+            
+            fileName = dataInStream.readUTF(); //read file name pushed from server end
+            System.out.println("Receving file...: "+fileName); //notify user
+            fileName =  "ClientCopy_" +fileName; //rename recievd file name on client end
+            System.out.println("Saving as file: "+fileName); //notify user
+            
+            long fileSize = Long.parseLong(dataInStream.readUTF());//read file size pushed from server end
+            System.out.println ("File Size: "+(fileSize/(1024*1024))+" MB");//show file size
+
+            byte[] byteArray=new byte [1024];//create byte array to read input stream and write file output stream
+            System.out.println("Receving file..");
+            
+            //Creates a file output stream to write to the file represented by the specified File object.
+            FileOutputStream fileOutStream = new FileOutputStream(new File(fileName),true);
+            long bytesRead;
+            
+            do
+            {
+                //Read from the data input stream into the byte array & return the byte value of the byte read. 
+                bytesRead = dataInStream.read(byteArray, 0, byteArray.length);
+                fileOutStream.write(byteArray,0,byteArray.length); //write to the file output stream from the byte array
                 
-        // close socket
-        s.close();// take out once placed in try with resources
+            }while(!(bytesRead<1024));//image file will be sent in chunks of 1024 bytes, a less value means end of file 
+                System.out.println("Image Sent");
+                //close file output stream
+                fileOutStream.close();
+                //close data output stream
+                dataOutStream.close();  	
+                // close socket
+                linkSocket.close();// take out once placed in try with resources
+        }
+        catch(EOFException e)
+        {
+	//do nothing
+        }
+        //***************************************************************************************************************************************
+        
+                
+        
     }
     
 }
